@@ -11,13 +11,9 @@ RSpec.describe 'Config' do
 
   let(:current_project) { 789 }
   let(:api_url) { 'https://example.com/api' }
-  let(:config_file_contents) { {token: token, current_project: current_project, api_url: api_url} }
+  let(:config_file_contents) { {'token' => token, 'current_project' => current_project, 'api_url' => api_url} }
   
   before do
-    Config.class_variables.each do |cv|
-      Config.class_variable_set(cv, nil)
-    end
-
     config_file=Tempfile.new
     
     @config_filepath = config_file.path
@@ -31,6 +27,8 @@ RSpec.describe 'Config' do
     end
     
     stub_const('Config::CONFIG_FILE', @config_filepath)
+
+    Config.load
   end
 
   after do
@@ -85,6 +83,58 @@ RSpec.describe 'Config' do
     end
   end
 
+  context 'when the configuration is not loaded' do
+    before do
+      Config.class_variables.each do |cv|
+        Config.class_variable_set(cv, nil)
+      end
+    end
+
+     
+  end
+  
+  describe '#load' do
+    before do
+      Config.class_variables.each do |cv|
+        Config.class_variable_set(cv, nil)
+      end
+    end
+    
+    context 'when using the default config file' do
+      subject { Config.load }
+
+      it 'loads the configuration from the default file' do
+        expect { subject }
+          .to change { Config.class_variable_get('@@config') rescue nil }
+               .from(nil)
+               .to(config_file_contents)
+      end
+    end
+
+    context 'when an override config file is provided' do
+      subject { Config.load @config_filepath }
+      
+      let(:default_config_filepath) do
+        # generate a temporary filename
+        # the actual file gets unlinked so it doesn't exist
+        Tempfile.open { |f| f.path } 
+      end
+
+      # override the default config filepath with a file that doesn't exist
+      before do
+        stub_const('Config::CONFIG_FILE', default_config_filepath)
+      end
+
+      it 'loads the configuration from the default file' do
+        expect { subject }
+          .to change { Config.class_variable_get('@@config') rescue nil }
+               .from(nil)
+               .to(config_file_contents)
+      end
+    end
+  end
+
+  
   describe '#save' do
     subject { Config.save }
 
@@ -123,7 +173,7 @@ RSpec.describe 'Config' do
       it 'writes the current the configuration to the config file' do
         expect { subject }
           .to change { File.read(@config_filepath) }
-               .to(config_file_contents.merge(token: new_token).to_json)
+               .to(config_file_contents.merge('token' => new_token).to_json)
       end
 
       it 'resets the dirty flag' do

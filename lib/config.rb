@@ -30,6 +30,28 @@ class Config
     def empty?
       @@empty ||= config.empty?
     end
+
+    def load config_filepath=CONFIG_FILE
+      class_variables.each do |cv|
+        class_variable_set(cv,nil)
+      end
+      
+      @@config =
+        if File.exist? config_filepath
+          JSON.parse(File.read(config_filepath)).freeze
+        else
+          @@empty=true
+          {}.freeze
+        end
+      
+      @@config.empty?
+    rescue => e
+      raise "unable to load config file #{CONFIG_FILE}"
+    end
+
+    def loaded?
+      !!@config
+    end
     
     def save
       if dirty?
@@ -43,18 +65,9 @@ class Config
     end
     
     private
-
-    def config
-      @@config ||=
-        if File.exist? CONFIG_FILE
-          JSON.parse(File.read(CONFIG_FILE)).freeze
-        else
-          @@empty=true
-          {}.freeze
-        end
-    rescue => e
-       raise "unable to load config file #{CONFIG_FILE}"
-    end
     
+    def config
+      @@config || raise('Configuration not loaded')
+    end
   end
 end
