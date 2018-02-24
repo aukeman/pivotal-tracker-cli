@@ -14,19 +14,20 @@ RSpec.describe 'Config' do
   let(:config_file_contents) { {token: token, current_project: current_project, api_url: api_url} }
   
   before do
-    Config.class_variable_set('@@config', nil)
-    Config.class_variable_set('@@dirty', nil)
+    Config.class_variables.each do |cv|
+      Config.class_variable_set(cv, nil)
+    end
 
     config_file=Tempfile.new
     
     @config_filepath = config_file.path
     
-    if config_file_contents
+    if config_file_contents.nil?
+      config_file.unlink
+    else
       File.open(@config_filepath, 'w') do |f|
         f.write( config_file_contents.to_json )
       end
-    else
-      config_file.unlink
     end
     
     stub_const('Config::CONFIG_FILE', @config_filepath)
@@ -130,4 +131,47 @@ RSpec.describe 'Config' do
       end
     end
   end
+
+  describe '#dirty?' do
+    before { Config.token } # ensure the config is loaded
+
+    subject { Config.dirty? }
+
+    context 'when the configuration file exists' do
+      context 'and something nothing has changed' do
+        it { is_expected.to eq(false) }
+      end
+
+      context 'and has changed' do
+        before { Config.token = new_token }
+        it { is_expected.to eq(true) }
+      end
+    end
+    
+    context 'when the config file does not exist' do
+      let(:config_file_contents) { nil }
+      it { is_expected.to eq(false) }
+    end
+  end
+
+  describe '#empty?' do
+    subject { Config.empty? }
+
+    context 'when the configuration file exists' do
+      context 'and nothing has changed' do
+        it { is_expected.to eq(false) }
+      end
+
+      context 'and something has changed' do
+        before { Config.token = new_token }
+        it { is_expected.to eq(false) }
+      end
+    end
+    
+    context 'when the config file does not exist' do
+      let(:config_file_contents) { nil }
+      it { is_expected.to eq(true) }
+    end
+  end
+
 end

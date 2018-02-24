@@ -19,6 +19,7 @@ class Config
       send(:define_method, (accessor.to_s + '=').to_sym) do |value|
         @@config=config.merge( accessor.to_s => value ).freeze
         @@dirty=true
+        @@empty=false
       end
 
     end
@@ -27,6 +28,10 @@ class Config
       @@dirty ||= false
     end
 
+    def empty?
+      @@empty ||= config.empty?
+    end
+    
     def save
       if dirty?
         Tempfile.open do |f|
@@ -45,6 +50,7 @@ class Config
         if File.exist? CONFIG_FILE
           JSON.parse(File.read(CONFIG_FILE)).freeze
         else
+          @@empty=true
           {}.freeze
         end
     rescue => e
