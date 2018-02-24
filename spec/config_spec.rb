@@ -90,7 +90,9 @@ RSpec.describe 'Config' do
       end
     end
 
-     
+    it 'raises an exception when a configuration item is loaded' do
+      expect{ Config.token }.to raise_error(RuntimeError)
+    end
   end
   
   describe '#load' do
@@ -109,6 +111,13 @@ RSpec.describe 'Config' do
                .from(nil)
                .to(config_file_contents)
       end
+
+      it { is_expected.to eq(true) }
+
+      context 'and the file is empty' do
+        let(:config_file_contents) { nil }
+        it { is_expected.to eq(false) }
+      end
     end
 
     context 'when an override config file is provided' do
@@ -125,12 +134,20 @@ RSpec.describe 'Config' do
         stub_const('Config::CONFIG_FILE', default_config_filepath)
       end
 
-      it 'loads the configuration from the default file' do
+      it 'loads the configuration from the override file' do
         expect { subject }
           .to change { Config.class_variable_get('@@config') rescue nil }
                .from(nil)
                .to(config_file_contents)
       end
+
+      it { is_expected.to eq(true) }
+
+      context 'and the file is empty' do
+        let(:config_file_contents) { nil }
+        it { is_expected.to eq(false) }
+      end
+
     end
   end
 
@@ -216,11 +233,11 @@ RSpec.describe 'Config' do
     subject { Config.dirty? }
 
     context 'when the configuration file exists' do
-      context 'and something nothing has changed' do
+      context 'and nothing has changed' do
         it { is_expected.to eq(false) }
       end
 
-      context 'and has changed' do
+      context 'and something has changed' do
         before { Config.token = new_token }
         it { is_expected.to eq(true) }
       end

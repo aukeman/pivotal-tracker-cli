@@ -44,7 +44,7 @@ class Config
           {}.freeze
         end
       
-      @@config.empty?
+      !@@config.empty?
     rescue => e
       raise "unable to load config file #{CONFIG_FILE}"
     end
