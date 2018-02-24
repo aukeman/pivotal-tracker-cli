@@ -61,6 +61,9 @@ class Config
           FileUtils.copy(f.path, CONFIG_FILE, preserve: true)
           @@dirty = false
         end
+        true
+      else
+        false
       end
     end
     

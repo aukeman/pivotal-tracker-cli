@@ -275,6 +275,8 @@ RSpec.describe 'Config' do
       it 'does not change the dirty flag' do
         expect { subject }.not_to change { Config.dirty? }.from(false)
       end
+
+      it { is_expected.to eq(false) }
     end
 
     context 'when the configuration changes' do
@@ -295,6 +297,8 @@ RSpec.describe 'Config' do
       it 'resets the dirty flag' do
         expect { subject }.to change { Config.dirty? }.from(true).to(false)
       end
+
+      it { is_expected.to eq(true) }
     end
 
     context 'when the configuration file is missing' do 
