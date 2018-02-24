@@ -130,6 +130,34 @@ RSpec.describe 'Config' do
         expect { subject }.to change { Config.dirty? }.from(true).to(false)
       end
     end
+
+    context 'when the configuration file is missing' do 
+      let(:config_file_contents) { nil }
+
+      context 'and the configuration is empty' do
+        before do
+          expect(Config.empty?).to eq(true)
+        end
+
+        it 'does not save the file' do
+          expect { subject }.not_to change { File.exist? @config_filepath }.from(false)
+        end
+      end
+        
+      context 'and configuration has been updated' do
+        before do
+          Config.token = new_token
+        end
+
+        it 'saves the file' do
+          expect { subject }.to change { File.exist? @config_filepath }.from(false).to(true)
+        end
+
+        it 'writes the new configuration to the file' do
+          expect { subject }.to change { File.read @config_filepath rescue nil }.to({token: new_token}.to_json)
+        end
+      end
+    end
   end
 
   describe '#dirty?' do
@@ -170,8 +198,15 @@ RSpec.describe 'Config' do
     
     context 'when the config file does not exist' do
       let(:config_file_contents) { nil }
-      it { is_expected.to eq(true) }
+
+      context 'and nothing has changed' do
+        it { is_expected.to eq(true) }
+      end
+
+      context 'and something has changed' do
+        before { Config.token = new_token }
+        it { is_expected.to eq(false) }
+      end
     end
   end
-
 end

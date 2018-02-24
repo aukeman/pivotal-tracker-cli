@@ -21,7 +21,6 @@ class Config
         @@dirty=true
         @@empty=false
       end
-
     end
 
     def dirty?
