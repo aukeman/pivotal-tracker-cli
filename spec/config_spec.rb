@@ -118,9 +118,17 @@ RSpec.describe 'Config' do
         expect { subject }.to change { Config.loaded? }.from(false).to(true)
       end
       
-      context 'and the file is empty' do
+      context 'and the file does not exist' do
         let(:config_file_contents) { nil }
         it { is_expected.to eq(false) }
+
+        it 'sets the loaded? flag' do
+          expect { subject }.to change { Config.loaded? }.from(false).to(true)
+        end
+
+        it 'sets the empty? flag' do
+          expect { subject }.to change { Config.empty? rescue nil }.to(true)
+        end
       end
     end
 
@@ -147,22 +155,100 @@ RSpec.describe 'Config' do
 
       it { is_expected.to eq(true) }
 
-      context 'and the file is empty' do
+      context 'and the file does not exist' do
         let(:config_file_contents) { nil }
         it { is_expected.to eq(false) }
+
+        it 'sets the loaded? flag' do
+          expect { subject }.to change { Config.loaded? }.from(false).to(true)
+        end
+        
+        it 'sets the empty? flag' do
+          expect { subject }.to change { Config.empty? rescue nil }.to(true)
+        end
       end
     end
 
-    # context 'when a configuration is already loaded' do
-    #   before { Config.load }
+    context 'when a configuration is already loaded' do
+      before { Config.load }
 
-    #   context 'and a new configuration is loaded' do
-    #     let(:new_configuration_file_contents) { {'token' => new_token } }
-    #     before do
+      subject { Config.load }
+
+      context 'and a new configuration is loaded' do
+        context 'and the configuration file exists' do
+          let(:new_config_file_contents) do
+            config_file_contents.merge({'token' => new_token })
+          end
           
-    #     end
-    #   end
-    # end
+          before do
+            File.open(@config_filepath, 'w') do |f|
+              f.write( new_config_file_contents.to_json )
+            end
+          end
+
+          it 'discards the exising configuration and loads a new one' do
+            expect { subject }
+              .to change { Config.class_variable_get('@@config') }
+                   .from( config_file_contents )
+                   .to( new_config_file_contents )
+          end
+
+          it 'keeps the loaded? flag set' do
+            expect{ subject }.not_to change { Config.loaded? }.from(true)
+          end
+
+          it 'keeps the empty? flag cleared' do
+            expect { subject }.not_to change { Config.empty? }.from(false)
+          end
+
+          context 'and the existing configuration is dirty' do
+            before { Config.token = new_token }
+
+            it 'clears the dirty flag' do
+              expect { subject }
+                .to change { Config.dirty? }
+                     .from(true)
+                     .to(false)
+            end
+          end
+
+          context 'and the configuration dos not file exists' do
+            before do
+              File.delete(@config_filepath)
+            end
+
+            it 'discards the exising configuration and loads an empty one' do
+              expect { subject }
+                .to change { Config.class_variable_get('@@config') }
+                     .from( config_file_contents )
+                     .to( {} )
+            end
+
+            it 'keeps the loaded? flag set' do
+              expect{ subject }.not_to change { Config.loaded? }.from(true)
+            end
+
+            it 'sets the empty? flag' do
+              expect { subject }
+                .to change { Config.empty? }
+                     .from(false)
+                     .to(true)
+            end
+
+            context 'and the existing configuration is dirty' do
+              before { Config.token = new_token }
+
+              it 'clears the dirty flag' do
+                expect { subject }
+                  .to change { Config.dirty? }
+                       .from(true)
+                       .to(false)
+              end
+            end
+          end
+        end
+      end
+    end
   end
   
   describe '#save' do
