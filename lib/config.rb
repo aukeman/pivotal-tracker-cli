@@ -50,7 +50,7 @@ class Config
     end
 
     def loaded?
-      !!@config
+      !!@@config
     end
     
     def save

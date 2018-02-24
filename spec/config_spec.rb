@@ -114,6 +114,10 @@ RSpec.describe 'Config' do
 
       it { is_expected.to eq(true) }
 
+      it 'sets the loaded? flag' do
+        expect { subject }.to change { Config.loaded? }.from(false).to(true)
+      end
+      
       context 'and the file is empty' do
         let(:config_file_contents) { nil }
         it { is_expected.to eq(false) }
@@ -147,10 +151,19 @@ RSpec.describe 'Config' do
         let(:config_file_contents) { nil }
         it { is_expected.to eq(false) }
       end
-
     end
-  end
 
+    # context 'when a configuration is already loaded' do
+    #   before { Config.load }
+
+    #   context 'and a new configuration is loaded' do
+    #     let(:new_configuration_file_contents) { {'token' => new_token } }
+    #     before do
+          
+    #     end
+    #   end
+    # end
+  end
   
   describe '#save' do
     subject { Config.save }
